@@ -1,4 +1,4 @@
-// src/controllers/auth-controller.js
+// src/controllers/auth.controller.js
 const User = require('../models/users.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -34,9 +34,9 @@ exports.register = async (req, res) => {
             { expiresIn: '7d' }
         );
         res.status(201).json({
-        id: user._id,
-        name: user.name,
-        email: user.email
+            id: user._id,
+            name: user.name,
+            email: user.email
         });
 
     } catch (error) {
@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Email and password required' });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).select('+password');
 
         if (!user || !user.password) {
             return res.status(400).json({ message: 'User not found' });
@@ -85,18 +85,3 @@ exports.login = async (req, res) => {
     }
 };
 
-
-
-exports.logout = async (req, res) => {
-    try {
-        req.session.destroy((err) => {
-            if (err) {
-                return res.status(500).json({ message: "Error logging out" });
-            }
-            return res.json({ message: "Logout successful" });
-        });
-    } catch (error) {
-        return res.status(500).json({ message: "Error logging out", error: error.message });
-    }
-    
-}
