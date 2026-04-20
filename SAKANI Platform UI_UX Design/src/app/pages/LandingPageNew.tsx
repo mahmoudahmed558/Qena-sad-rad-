@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
 import { Search, ShieldCheck, MessageSquare, SlidersHorizontal, MapPin, ArrowRight, CheckCircle, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PropertyCard } from '../components/PropertyCard';
+import api from '../../lib/axios';
 
 const FEATURED_PROPERTIES = [
   {
@@ -78,6 +79,32 @@ const TESTIMONIALS = [
 export const LandingPageNew = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [properties, setProperties] = useState(FEATURED_PROPERTIES);
+
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      try {
+        const res = await api.get('/places');
+        if (res.data?.results?.length > 0) {
+          const mapped = res.data.results.map((p: any) => ({
+            id: p._id,
+            image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=800&auto=format&fit=crop', // default demo image
+            title: p.name,
+            location: 'قنا',
+            price: 500, // default if price is not backend
+            rating: p.avgRating || 0,
+            reviews: p.ratingsCount || 0,
+            type: p.category || 'غرفة',
+            amenities: ['واي فاي', 'مجهزة'],
+          }));
+          setProperties(mapped); // Replace or append as desired
+        }
+      } catch (err) {
+        console.error('Failed to fetch properties', err);
+      }
+    };
+    fetchPlaces();
+  }, []);
 
   const handleToggleFavorite = (id: string) => {
     setFavorites(prev =>
@@ -300,7 +327,7 @@ export const LandingPageNew = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {FEATURED_PROPERTIES.map((property, index) => (
+            {properties.map((property, index) => (
               <motion.div
                 key={property.id}
                 initial={{ opacity: 0, y: 20 }}

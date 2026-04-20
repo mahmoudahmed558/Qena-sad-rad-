@@ -2,21 +2,39 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../lib/axios';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [accountType, setAccountType] = useState<'student' | 'owner'>('student');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    if (accountType === 'student') {
-      navigate('/');
-    } else {
-      navigate('/owner');
+    setIsLoading(true);
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      
+      // Update Context
+      login(response.data.user, response.data.token);
+      
+      toast.success('تم تسجيل الدخول بنجاح');
+      
+      if (accountType === 'student') {
+        navigate('/');
+      } else {
+        navigate('/owner');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'فشل تسجيل الدخول. يرجى التأكد من البيانات.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -137,10 +155,11 @@ export const LoginPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              className="w-full py-4 rounded-xl bg-gradient-to-br from-[#003344] to-[#004455] text-white font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+              disabled={isLoading}
+              className="w-full py-4 rounded-xl bg-gradient-to-br from-[#003344] to-[#004455] text-white font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>تسجيل الدخول</span>
-              <ArrowRight className="w-5 h-5" />
+              <span>{isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}</span>
+              {!isLoading && <ArrowRight className="w-5 h-5" />}
             </motion.button>
           </form>
 

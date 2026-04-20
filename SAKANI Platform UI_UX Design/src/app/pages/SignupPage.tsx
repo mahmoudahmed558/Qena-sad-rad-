@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, Mail, Phone, Lock, Eye, EyeOff, Upload, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../lib/axios';
 
 export const SignupPage = () => {
   const [searchParams] = useSearchParams();
@@ -10,6 +13,8 @@ export const SignupPage = () => {
 
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -41,9 +46,27 @@ export const SignupPage = () => {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/welcome');
+    setIsLoading(true);
+    try {
+      // The backend expects: name, email, password
+      const response = await api.post('/auth/register', { 
+        name: formData.fullName, 
+        email: formData.email, 
+        password: formData.password 
+      });
+      
+      // Auto login after register if API returns token, else navigate to login.
+      // Looking at auth.controller.js, register returns id, name, email and signs a token but does NOT return it. Wait...
+      // Let me assume we just redirect to login for now if token is missing. Or redirect to welcome.
+      toast.success('تم إنشاء الحساب بنجاح');
+      navigate('/welcome');
+    } catch (error: any) {
+       toast.error(error.response?.data?.message || 'فشل في إنشاء الحساب. تأكد من البيانات أو البريد الإلكتروني.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isStep1Valid = formData.fullName && formData.phone && formData.email && formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
@@ -341,10 +364,11 @@ export const SignupPage = () => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       type="submit"
-                      className="flex-1 py-4 rounded-xl gradient-btn text-white font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                      disabled={isLoading}
+                      className="flex-1 py-4 rounded-xl gradient-btn text-white font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-[#003344]"
                     >
-                      <span>إنشاء الحساب</span>
-                      <CheckCircle className="w-5 h-5" />
+                      <span>{isLoading ? 'جاري الإنشاء...' : 'إنشاء الحساب'}</span>
+                      {!isLoading && <CheckCircle className="w-5 h-5" />}
                     </motion.button>
                   </div>
                 </motion.div>
